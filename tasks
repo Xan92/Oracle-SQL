@@ -1,0 +1,341 @@
+
+-- 1. Adın ilk hərfini '*' ,dördüncü hərfini '/' simvolları ilə əvəzləyən sorğu yazın (table:Employees)
+
+select first_name,replace(replace(first_name,substr(first_name,1,1),'*'),
+substr(first_name,4,1),'/') as evezetme  
+from hr.employees
+    
+-- 2. Ad,soyad ve işə qəbul tarixini boşluqlarla birləşdirərək aşağıdakı kimi nəticə
+-- əldə edən və işə qəbul tarixini artan sırayla
+-- nizamlayan sorğu yazın. (table:employees)
+-- nümunə: Josep Arnold 2006-ci ilde ise qebul edildi
+
+select first_name || ' ' || last_name || ' ' || to_char(hire_date,'yyyy') || '-ci ilde ise qebul edildi' as birleshme
+from hr.employees
+
+--qeyd: concatla da etmek olar lakin oracle-da concat yalniz iki arqument qebul edir deye funksiya ice-ice ve uzun alinacaq.
+ 
+-- 3. Eyni olan Job ID-lərin sayı 5-dən çoxdursa bu zaman hər Job ID-nin əvvəlinə
+-- 1 ədəd "*" simvolunu əlavə edən sorğu yazın(table:employees)
+with say_job_id as (select job_id ,row_number() over(partition by job_id order by job_id) as job_say from hr.employees)
+select distinct('*'||job_id) from say_job_id where job_say>5
+-- 4. Ən çox maaş alan işçinin adının əvvəlinə "*" simvolunu, soyadının sonuna "/" simvolunu əlavə edən sorğu yazın(table:employees)
+select '*' || first_name, last_name || '/'
+from hr.employees
+where salary=(select max(salary) from hr.employees)    
+-- 5. 2001-ci ildə işə qəbul olan və ya Department ID-si 100 olan işçilərin adının birinci hərfi ilə 
+-- soyadının ilk 5 hərfini boşluqlarla birləşdirən və ada görə artan sırayla nizamlanan sorğu yazın(table:employees)
+select substr(first_name,1,1) || ' ' || substr(last_name,1,5),first_name,last_name as birleshme
+from hr.employees
+where to_char(hire_date,'yyyy')=2001 or department_id=100
+ 
+-- 6. Length funksiyasını instr və substr funksiyalarının kombinasiyasından necə almaq olar? Suala əsasən sorğu yazın
+
+    select first_name,instr(first_name,substr(first_name,-1),1) from hr.employees
+ 
+-- 7. 2002 və 2006-cı illər arasında işə qəbul olan və adı "a" hərfi ilə başlayan bütün 
+-- işçilərin maaşlarını 70% azaladan (yuvarlaqlaşdıraraq) sorğu yazın(table:employees)
+
+select to_char(hire_date,'yyyy'), salary, round(salary*0.3)
+from hr.employees
+where hire_date between '01-jan-2002' and '31-dec-2006'  
+
+-- 8.Adının sonunda qoşa hərf olan işçilərin adlarını və onların soyadlarını boşluqla birləşdirib,
+-- işə qəbul ili ilə hal-hazırkı il arasında neçə il olduğunu müəyyənləşdirən sorğu yazın(table:employees)
+
+select first_name||' '|| last_name full_name,trunc(months_between(sysdate,hire_date)/12 ) as experience
+    from hr.employees where substr(first_name,-1,1)=substr(first_name,-2,1)
+    
+-- 9. Adında 2 dəfə a hərfindən istifadə olunan işçilərin adını
+-- və işə qəbul tarixi ilə həmin ilin sonuncu günü arasında neçə gün olduğunu ekrana çıxaran sorğu tərtib edin(table:employees)
+
+    select first_name,last_day(add_months(trunc(hire_date,'year'),11))-hire_date day_expericence
+    from hr.employees where length(first_name)-length(replace(first_name,'a',''))=2   ------?
+
+--10. Employees cədvəlində first_name-lərdə ilk c simvolunun yerini tapın
+
+select first_name, instr(lower(first_name),'c',1) indeks
+from hr.employees where instr(lower(first_name),'c',1)!=0
+  
+--11. 2004-cü ildə işə qəbul olan işçilərin siyahısını çıxarın
+
+select first_name, to_char(hire_date,'yyyy') year
+from hr.employees
+where to_char(hire_date,'yyyy')=2004
+
+--12. Telefon nömrəsi sütununda 1234 rəqəmlərini * ilə əvəz edin
+
+    select phone_number, replace(replace(replace(replace(phone_number,'1','*'),'2','*'),'3','*'),'4','*') as evezetme
+from hr.employees  
+
+--13. Bazar günü işə qəbul olan işçilərin siyahısını çıxarın
+
+select first_name, to_char(hire_date,'day') day_of_week
+from hr.employees
+where trim(lower(to_char(hire_date,'day')))='sunday'
+
+--14. Palindrom olmayan last_name-lərin siyahısını çıxarın
+select last_name from hr.employees where last_name!=reverse(last_name)
+    
+--15. Cari tarixlə işçilərin işə qəbul olduğu tarix arasındakı ay və gün fərqlərini tapın
+
+select hire_date, trunc(sysdate-hire_date) as gun, trunc(months_between(sysdate,hire_date)) as ay
+from hr.employees
+
+--16. İşçilərin işə qəbul olduğu tarixə nəzrən növbəti Bazar Ertəsini çıxarın
+
+select hire_date, next_day(hire_date,'monday') monday
+from hr.employees
+
+--17. Telefon nömrəsində 2-dən artıq . olanları cədvəldən silin
+
+  select phone_number from hr.employees where length(phone_number)-length(replace(phone_number,'.',''))>2
+
+  --delete hr.employees where length(phone_number)-length(replace(phone_number,'.',''))>2      ------?
+
+--18. Adında qoşa ll hərfi olanları ekrana çıxarın.
+
+select first_name from hr.employees where first_name like '%ll%'
+    
+--19. Hər işçinin işə qəbul olduğu gündən həmin ilin sonuncu gününə qədər neçə gün var hesablayın
+
+select first_name, hire_date,last_day(add_months(trunc(hire_date,'year'),11))-hire_date day_count
+from hr.employees 
+ 
+--20. cari tarixə nəzərən neçə ildir işlədiyini tapın
+
+select first_name, hire_date, trunc((sysdate-hire_date)/365) as il
+from hr.employees
+
+--21. Employees cedvelinde Susan ile eyni gunde ise qebul olan iscileri cixarin.
+
+select first_name, hire_date    
+from hr.employees
+where hire_date=(select hire_date
+from hr.employees
+where lower(first_name)='susan')    
+
+--22.Employees cedvelinden employee_id-si 107,110,115,205 olan iscilerin managerlerinin ad, soyadini cixarin. (iki hell hem join hem subquery)
+
+select employee_id, first_name, last_name
+from hr.employees
+where employee_id =any (select manager_id from hr.employees where employee_id in (107,110,115,205))
+    
+--23.Employees cedvelinden salary-si butun iscilerin orta maasinda boyuk olan iscilerin siyahisini cixarin.
+
+select first_name, salary
+from hr.employees
+where salary>(select avg(salary)
+from hr.employees)
+
+--24.Departments , employees cedvelinden istifade ederek salary-si 14000-den boyuk olan iscilerin
+--calisdigi department_name tekrarlanmayan siyahisini cixarin(iki hell hem join hem subquery)
+
+select distinct d.department_name
+from hr.employees e
+join hr.departments d
+on e.department_id=d.department_id
+where salary>14000
+
+--25. Employees, departments cedvelinden iscinin ad, soyad, hire_date, department_name melumatini cixarin. (iki hell hem join hem subquery)
+
+select e.first_name, e.last_name, e.hire_date, d.department_name
+from hr.employees e
+join hr.departments d
+on e.department_id=d.department_id
+
+--26. Departments cedvelinde manager_id-si bos olmayan departmentlerinin yerlesdiyi
+--city,street_address melumatini cixaran sql yazin(subquery, join iki usulla)
+
+select e.manager_id, l.city, l.street_address
+from hr.employees e
+join hr.departments d
+on e.department_id=d.department_id
+join hr.locations l
+on d.location_id=l.location_id
+where e.manager_id is not null
+
+--27.Employees cedvelinden max ve min salary alan butun iscilerin siyahisini cixarin
+  
+select first_name,salary
+from hr.employees
+where salary =(select max(salary) from hr.employees) or salary= (select min(salary) from hr.employees)
+
+--28.Employees cedvelinden first_name, last_name, salary, average_salary ( bu umumi employees cedveli
+--cedveli uzre faktiki iscinin calisdigi departmentin orta maasidir) ve eger maasi orta maasdan yuxaridirsa
+
+select first_name, last_name, salary from ( select first_name, last_name, salary,
+    avg(salary) over(partition by department_id order by salary) avg_salary_dep 
+    from hr.employees) where salary>avg_salary_dep
+
+--29. Employees cedvelinden first_name, last_name, salary, average_job_salary ( bu umumi employees
+--cedveli uzre faktiki iscinin calisdigi job_id uzre orta maasidir) ve eger maasi orta maasdan yuxaridirsa
+--‘Above average job salary’ kicikdirse ‘below average job salary’ yazmaqla salary_job_status adli sutun cixarin
+
+select first_name,last_name,salary, avg_job_salary,
+    case when avg_job_salary<salary then 'Above average job salary' else  'below average job salary' end as salary_job_status
+    from (select first_name,last_name,salary,avg(salary) over(partition by job_id order by salary) as avg_job_salary
+    from hr.employees) 
+
+--30. Countries, locations cedvellerini istifade etmekle location_id-si 1200,1800 araliginda olan olke adlarini cixarin (iki hell join, subquery)
+
+select l.location_id, c.country_name
+from hr.locations l
+join hr.countries c
+on l.country_id=c.country_id
+where l.location_id between 1200 and 1800
+
+--31. Salary-si cüt ədəd olanları və adında e hərfi olanları ekrana çıxarın
+select * from hr.employees where mod(salary,2)=0 and first_name like '%e%'
+
+--32. Employees cədvəlində bütün telefon nömrələrinin uzunluqlarını əvvəlinə 0 atmaqla eyniləşdirərək ekrana çıxarın
+select lpad(phone_number,length(phone_number)+1,'0') from hr.employees
+
+--33. Telefon nomrələrinin Sondan ikinci simvolu 8 olan işçilərin hire_date sütunlarını ekrana çıxarın
+select hire_date,phone_number from hr.employees where substr(phone_number,-2,1)=8
+
+--34. Bütün maaşların 30 faiz azaldılmasından alınan nəticəni kəsrdən sonra 2 vahid saxlamaqla yuvarlaqlaşdırıb ekrana çıxarın
+select round(salary*0.7,2) rounded from hr.employees
+
+--35. Maaşlardan 20000 azaldıb 3-cü dərəcədən kubunu tapın və nəticə həmişə müsbət olmalıdır
+
+select abs(power(salary-20000,3)) result from hr.employees
+
+--36. Maaşı 9000-dən çox olan işçilərin maaşını 50% artıraraq ikinci dərəcədən qüvvətə yüksəldib və  sondakı ilk iki rəqəmi silib ekrana çıxardan sorğu yazın(table:employees)
+select power(salary*1.5,2),substr(power(salary*1.5,2),1,length(power(salary*1.5,2))-2)  from hr.employees
+--36.Ən yeni işə qəbul olan işçinin ad və soyadını boşluqlarla birləşdirərək ekrana çıxaran sorğu yazın(table:employees)
+select first_name ||' '|| last_name,hire_date from hr.employees order by hire_date asc fetch first 1 row with ties
+    select first_name from hr.employees where hire_date=(select min(hire_date) from hr.employees)
+--37. Yanvar və sentyabr  ayları arasında işə qəbul olan və soyadının uzunluğu adının uzunluğandan çox olan işçilərin Job ID-lərində "_" simvolu
+--da daxil olmaqla ondan əvvəlki simvolları da silib ekrana çıxaran sorğu yazın (table:employees)
+select substr(job_id,instr(job_id,'_',1)+1) from hr.employees where length(last_name)>length(first_name) and  to_char(hire_date,'MM') between 1 and 9
+
+--38. Email adreslərinin üçüncü hərfi r olan və polindrom olmayan işçilərin işə qəbul tarixləri və 
+--hal-hazırkı tarix arasında nə qədər ay,gün və il fərqinin olduğunu ekrana çıxaran sorğu yazın(table:employees)
+select hire_date,sysdate-hire_date gun,months_between(sysdate,hire_date) ay,months_between(sysdate,hire_date)/12 il from hr.employees where substr(email,3,1)='R' and email!=reverse(email)
+
+--39. Kommisiya ilə bir yerdə işçinin aylıq maaşı 17000-dən çoxdursa bu zaman ekrana "high salary",10000 və 17000
+--arasındadırsa "middle salary",10000-dən azdırsa "low salary" və ümumiyyətlə kommisiya almırsa "least salary" ekrana çıxaran sorğu yazın (table:employees)
+select case when salary+(salary*nvl(commission_pct,0))>17000 then 'high salary'
+    when salary+(salary*nvl(commission_pct,0)) between 10000 and 17000  then 'middle salary'
+    when salary+(salary*nvl(commission_pct,0)) < 10000  then 'low salary' else 'least salary' end as status_salary
+from hr.employees
+--40. Adında qoşa n hərfi olan işçilərin işə qəbul olduğu ayın sonuncu bazar ertəsini və 
+--maaşlarının hər birini 2-ci dərəcədən qüvvətə yüksəldib tam hissədən son 6 rəqəmi 0 olmaqla yuvarlaqlaşdıran sorğu tərib edin(table:employees)
+select next_day(last_day(hire_date)-7,'monday'),round(power(salary,2),-6) from hr.employees where first_name like '%nn%'
+--41. Adının ortasında qoşa hərf olan və soyadının uzunluğu adının uzunluğundan 2-dən çox olan 
+--işçilər arasında ən az maaş alan işçinin Job ID-si üçün neçə "_" simvolundan istifadə olunduğunu tapmaq üçün sorğu tərtib edin(tables:employees)
+select length(job_id)-length(replace(job_id,'_','')) from hr.employees where salary=
+    ( select min(salary) from hr.employees where regexp_like(substr(first_name,2,length(first_name)-2),'(.)\1') and length(last_name)-length(first_name)>2)
+--42. İşə qəbul tarixi şənbə və bazar günlərinə düşən işçilər arasında ən çox maaş alan işçinin 
+--adının sondan ikinci hərfini "/" simvolu ilə, soyadının birinci hərfini kiçik, üçüncü hərfini isə böyük simvollarla göstərib ekrana çıxaran sorğu tərtib edin(table:employees)
+select replace(first_name,substr(first_name,-2,1),'/'),lower(substr(last_name,1,1)) || replace(substr(last_name,2),substr(last_name,3,1),upper(substr(last_name,3,1))) 
+    from hr.employees where salary =
+    (select max(salary) from hr.employees where to_char(hire_date,'d') in ('1','7'))
+--43. Telefon nömrələrində əgər ikidən çox nöqtədən istifadə edilibsə bu zaman nöqtələri "-" simvolu ilə əvəzləyin,
+--digər hallarda isə nöqtələri "/" simvolu ilə əvəzləyib ekrana çıxaran sorğu tərtib edin (table:employees)
+select case when length(phone_number)-length(replace(phone_number,'.',''))>2 then replace(phone_number,'.','_')
+else replace(phone_number,'.','/')  end as phone_number_modified from hr.employees
+--44.Avqust ayında sifarişlər etmiş müştərilərin ad və soyadını boşluqlarla birləşdirərək ekrana çıxarın(həm join həm subquery)
+select CUST_FIRST_NAME || ' ' || CUST_LAST_NAME as  full_name from oe.customers 
+    where customer_id in (select  customer_id from oe.orders where to_char(order_date,'MM')='08')
+--45.Heç bir sifariş etməyən müştərilərin id,ad,soyad və doğum tarixlərini ekrana çıxarın(həm join həm subquery)
+select CUST_FIRST_NAME ,CUST_LAST_NAME,date_of_birth from oe.customers where customer_id in (select customer_id from oe.orders where order_status=0)
+--46.1956-cı ildə anadan olmuş evli müştərilər arasında ilk sifariş etmiş müştərinin sifariş məbləğinin kredit limitindən nə qədər az və ya çox olduğunu tapın
+select o.order_total-c.credit_limit  from oe.orders o join oe.customers c on o.customer_id=c.customer_id 
+    where to_char(c.date_of_birth,'RRRR')='1956' and c.marital_status='married' order by o.order_id
+--47.2007-ci ildə sifarişlər etmiş xanım müştərilərin tam adını,yaşını və kredit limitlərini ekrana çıxarın və nəticələr unikal olmalıdır (həm join həm subquery)
+select distinct(CUST_FIRST_NAME || ' ' || CUST_LAST_NAME) as full_name,CREDIT_LIMIT,date_of_birth,months_between(sysdate,to_date(date_of_birth,'DD-MON-RR'))/12 as age from oe.customers
+    where customer_id in (select customer_id from oe.orders where to_char(order_date,'YYYY')='2007')
+
+--48.Aylıq gəliri 30000 və daha az olan kişi müştərilərin ümumi sifariş məbləğinin kredit limitlərinin 
+      --2-ci dərəcədən qüvvətini aşıb aşmadığını müəyyən etmək üçün sorğu formalaşdırın(case when istifadə etməklə) (həm join həm subquery)
+select case when o.order_total-power(CREDIT_LIMIT,2)>0 then 'Asmir' else 'Asir' end as status from oe.customers c
+     join oe.orders o on c.CUSTOMER_ID=o.CUSTOMER_ID
+		where INCOME_LEVEL like 'A:%' and gender='M'
+--49.Amerikada yaşayan evli müştərilərin etdiyi ilk və son sifarişləri arasında neçə gün olduğunu,həmin müştərinin id-sini ekrana çıxarın (həm join həm subquery)
+
+select c.customer_id,max(o.order_date)-min(o.order_date) as difference from oe.customers c 
+    join oe.orders o on c.CUSTOMER_ID=o.CUSTOMER_ID 
+    where NLS_TERRITORY='AMERICA' and MARITAL_STATUS='married'
+group by c.customer_id
+order by difference desc
+--50.Hər bir müştərinin mail ünvanından ad və soyadını ayıraraq iki ayrı sütunda göstərin
+select substr(CUST_EMAIL,1,instr(CUST_EMAIL,'.',1,1)-1) First_name,
+    substr(CUST_EMAIL,instr(CUST_EMAIL,'.',1,1)+1,instr(CUST_EMAIL,'@',1,1)-instr(CUST_EMAIL,'.',1,1)-1) Last_name from oe.customers
+--51.Ernest George adlı müştəriylə eyni gündə sifariş vermiş müştərilərin sifariş məlumatlarını çıxarın
+select * from oe.orders 
+    where order_date = 
+    ( select order_date from oe.orders o join oe.customers c 
+    on o.customer_id=c.customer_id where cust_first_name='Ernest' and cust_last_name='George') 
+
+--52.Dörddən çox məhsul sifariş etmiş müştərilərin tam adını,yaşını və etdiyi sifarişlərin ümumi məbləğini çıxarın(nəticələr unikal olmaldır)
+select c.cust_first_name ||' '|| c.cust_last_name as full_name,date_of_birth,months_between(sysdate,to_date(c.date_of_birth,'DD-MM-YYYY'))/12 as age,sum(o.order_total) as total_orders
+    from oe.orders o join oe.customers c on o.customer_id=c.customer_id where o.order_status>4
+group by c.cust_first_name ||' '|| c.cust_last_name ,date_of_birth,months_between(sysdate,to_date(c.date_of_birth,'DD-MM-YYYY'))/12
+order by total_orders desc
+--53.Soyadının uzunluğu adının uzunluğundan böyük olan müştərilərin ümumi etdiyi sifariş məbləği sonuncu etdiyi sifariş məbləğindən nə qədər çoxdur?
+select c.customer_id,sum(o.order_total)-(SELECT o2.order_total
+        FROM oe.orders o2
+        WHERE o2.customer_id = c.customer_id
+        AND order_date = 
+            (SELECT max(o3.order_date) 
+             FROM oe.orders o3 
+             WHERE o3.customer_id = c.customer_id)) as difference
+    from oe.customers c join oe.orders o on c.customer_id=o.customer_id 
+    where length(c.cust_last_name)>length(c.cust_first_name)
+	group by c.customer_id
+--54.Hər bir müştəri neçə gün aralığı ilə sifariş edib(İlk sifarişnin qarşısında 0 qeyd edilsin)
+
+SELECT customer_id,
+       order_id,
+       order_date,
+       NVL(EXTRACT(day FROM (order_date - LAG(order_date, 1) 
+                             OVER (PARTITION BY customer_id ORDER BY order_date))), 0) AS days_between_orders
+FROM oe.orders
+ORDER BY customer_id, order_date;
+
+--55.Hər bir müştərinin etdiyi sifariş məbləği ümumi etdiyi sifariş məbləğinin neçə faizini təşkil edir
+select customer_id,round((order_total/sum(order_total) over(partition by customer_id ))*100) from oe.orders
+
+--56.Hər bir müştərinin ilk dəfə etdiyi sifariş məbləği ümumi sifarişlərin neçə faizini təşkil edir
+with order_of_order as (select customer_id,order_total,
+    row_number() over(partition by customer_id order by order_date) as row_num from oe.orders),
+    total_orders as (select customer_id,sum(order_total) as total from oe.orders group by customer_id)
+select o.customer_id,round((o.order_total/t.total)*100) as percent
+    from order_of_order o join total_orders t 
+    on o.customer_id=t.customer_id where row_num=1
+
+--57.Hər bir müştərinin son dəfə etdiyi sifariş məbləği ümumi sifarişlərin neçə faizini təşkil edir
+with order_of_order as (select customer_id,order_total,
+    row_number() over(partition by customer_id order by order_date desc) as row_num from oe.orders),
+    total_orders as (select customer_id,sum(order_total) as total from oe.orders group by customer_id)
+select o.customer_id,round((o.order_total/t.total)*100) as percent
+    from order_of_order o join total_orders t 
+    on o.customer_id=t.customer_id where row_num=1
+
+--58.Hər bir müştərinin etdiyi sifariş məbləği əvvəl etdiyi sifarişin məbləğindən nə qədər çox və ya azdır(İlk sifarişin qarşısında 0 qeyd edilsin)
+
+select customer_id,order_total,nvl(order_total-lag(order_total,1) 
+over(partition by customer_id order by order_date),0) as difference_lag from oe.orders
+--59.Ən çox məhsul sifariş etmiş müştərilərin məlumatlarını ekrana çıxarın
+select * from oe.customers  where customer_id in 
+(select customer_id from oe.orders 
+where order_status in (select max(order_status) from oe.orders))
+--60.Sifariş edilmə illərinə görə cəmi məbləğ nə qədərdir?
+select extract(year from order_date) as year, sum(order_total)  as total  
+from oe.orders group by extract(year from order_date) order by year
+
+--61.Hər bir müştərinin ikinci etdiyi sifarişlə bağlı məlumatları ekrana çıxarın
+with rank as (select ORDER_ID,ORDER_DATE,CUSTOMER_ID,ORDER_STATUS,ORDER_TOTAL, row_number() over(partition by customer_id order by order_date) as row_num from oe.orders)
+select * from rank where row_num=2
+
+--62.Hər bir müştərinin sonuncu etdiyi sifarişlə bağlı məlumatları ekrana çıxarın
+with rank as (select ORDER_ID,ORDER_DATE,CUSTOMER_ID,ORDER_STATUS,ORDER_TOTAL, row_number() over(partition by customer_id order by order_date desc) as row_num from oe.orders)
+select * from rank where row_num=1
+desc oe.orders
+--63.Bir sorğuda satış təmsilçisi olan sifarişlər üçün hər bir müştəri və satış təmsilçisinin cəmi sifariş məbləğini çıxarın(grouping sets)
+select customer_id,SALES_REP_ID,sum(order_total) from oe.orders 
+where SALES_REP_ID is not null 
+group by grouping sets ((customer_id,SALES_REP_ID),(customer_id),(SALES_REP_ID),());
+
